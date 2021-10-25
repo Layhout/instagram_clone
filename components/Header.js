@@ -44,7 +44,7 @@ const Header = () => {
                                     3
                                 </div>
                             </div>
-                            <PlusCircleIcon className="navBtn" />
+                            <PlusCircleIcon className="navBtn" onClick={() => setOpen(true)} />
                             <UserGroupIcon className="navBtn" />
                             <HeartIcon className="navBtn" />
                             <img src={session?.user.image} alt="" className="h-10 w-10 rounded-full cursor-pointer" onClick={signOut} />
