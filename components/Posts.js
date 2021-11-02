@@ -23,18 +23,13 @@ const dummy_data = [
 const Posts = () => {
     const [posts, setPosts] = useState([]);
 
-    useEffect(() => onSnapshot(query(collection(db, "posts"), orderBy("timestamp", "desc")), snapshot => {
-        setPosts(snapshot.docs);
-    }), [db]);
+    useEffect(() => {
+        const unsubscribe = onSnapshot(query(collection(db, "posts"), orderBy("timestamp", "desc")), snapshot => {
+            setPosts(snapshot.docs);
+        });
 
-    // same as this
-    // useEffect(() => {
-    //     const unsubscribe = onSnapshot(query(collection(db, "emails"), orderBy("timestamp", "desc")), snapshot => {
-    //         setPosts(snapshot);
-    //     });
-
-    //     return unsubscribe;
-    // }, [db])
+        return () => unsubscribe();
+    }, [db])
 
     return (
         <div>
