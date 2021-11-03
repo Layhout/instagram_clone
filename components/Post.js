@@ -2,7 +2,7 @@ import { BookmarkIcon, ChatIcon, DotsHorizontalIcon, EmojiHappyIcon, HeartIcon, 
 import { HeartIcon as HeartIconFilled } from "@heroicons/react/solid"
 import { useSession } from "next-auth/react"
 import { useEffect, useRef, useState } from "react";
-import { addDoc, collection, onSnapshot, orderBy, query, serverTimestamp } from "@firebase/firestore";
+import { addDoc, collection, deleteDoc, doc, onSnapshot, orderBy, query, serverTimestamp, setDoc } from "@firebase/firestore";
 import { db } from "../firebase";
 import Moment from "react-moment";
 
@@ -10,6 +10,8 @@ const Post = ({ id, username, userImg, img, caption }) => {
     const { data: session } = useSession();
     const [comments, setComments] = useState([]);
     const inputRef = useRef();
+    const [likes, setLikes] = useState([]);
+    const [hasLiked, setHasLiked] = useState(false);
 
     useEffect(() => {
         const unSub = onSnapshot(query(collection(db, "posts", id, "comments"), orderBy("timestamp", "desc")), snapshot => {
@@ -17,7 +19,29 @@ const Post = ({ id, username, userImg, img, caption }) => {
         })
 
         return () => unSub();
-    })
+    }, [db, id]);
+
+    useEffect(() => {
+        const unSub = onSnapshot(collection(db, "posts", id, "likes"), snapshot => {
+            setLikes(snapshot.docs);
+        })
+
+        return () => unSub();
+    }, [db, id]);
+
+    useEffect(() => {
+        setHasLiked(likes.findIndex(l => l.id === session.user.uid) !== -1);
+    }, [likes])
+
+    const likePost = async () => {
+        if (hasLiked) {
+            await deleteDoc(doc(db, "posts", id, "likes", session.user.uid));
+        } else {
+            await setDoc(doc(db, "posts", id, "likes", session.user.uid), {
+                username: session.user.username,
+            });
+        }
+    }
 
     const sendComment = async (e) => {
         e.preventDefault();
@@ -46,7 +70,7 @@ const Post = ({ id, username, userImg, img, caption }) => {
             {session &&
                 <div className="flex justify-between p-4">
                     <div className="flex space-x-4">
-                        <HeartIcon className="btn" />
+                        {hasLiked ? <HeartIconFilled className="btn text-red-500" onClick={likePost} /> : <HeartIcon className="btn" onClick={likePost} />}
                         <ChatIcon className="btn" />
                         <PaperAirplaneIcon className="btn" />
                     </div>
@@ -58,6 +82,7 @@ const Post = ({ id, username, userImg, img, caption }) => {
             {/* caption */}
             <div>
                 <p className="p-4 truncate">
+                    {likes.length > 0 && <p className="font-bold mb-1">{likes.length} likes</p>}
                     <span className="font-bold mr-1">{username}</span> {caption}
                 </p>
             </div>
